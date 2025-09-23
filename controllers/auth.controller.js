@@ -10,7 +10,7 @@ const signup = asyncHandler(async (req, res, next) => {
 
   const token = jwt.sign(
     { userId: user._id, email: user.email },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET_KEY,
     { expiresIn: "7d" }
   );
 
@@ -31,7 +31,7 @@ const signin = asyncHandler(async (req, res, next) => {
 
   const token = jwt.sign(
     { userId: user._id, email: user.email },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET_KEY,
     { expiresIn: "7d" }
   );
 
@@ -63,7 +63,7 @@ const protectedRoutes = asyncHandler(async (req, res, next) => {
     );
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
   const currentUser = await UserModel.findById(decoded.userId);
 
   if (!currentUser) {
@@ -76,4 +76,37 @@ const protectedRoutes = asyncHandler(async (req, res, next) => {
   next();
 });
 
-export { signup, signin, protectedRoutes };
+/**
+ * @desc    Add points to user (for testing/admin purposes)
+ * @route   POST /api/auth/add-points
+ * @access  Private
+ */
+const addPointsToUser = asyncHandler(async (req, res, next) => {
+  const { points } = req.body;
+  const userId = req.user._id;
+
+  // Validate points amount
+  const pointsToAdd = parseInt(points);
+  if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
+    return next(new ApiError("Points must be a valid positive number", 400));
+  }
+
+  // Find and update user points
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return next(new ApiError("User not found", 404));
+  }
+
+  user.points += pointsToAdd;
+  await user.save();
+
+  res.status(200).json({
+    status: "success",
+    message: `${pointsToAdd} points added successfully`,
+    data: {
+      totalPoints: user.points,
+    },
+  });
+});
+
+export { signup, signin, protectedRoutes, addPointsToUser };

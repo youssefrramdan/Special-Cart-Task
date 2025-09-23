@@ -7,6 +7,9 @@ import {
   clearCart,
   getCartCount,
   addTips,
+  applyPoints,
+  removePointsDiscount,
+  getUserPoints,
 } from "../controllers/cart.controller.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
 
@@ -35,5 +38,15 @@ router.delete("/clear", clearCart);
 
 // POST /api/cart/tips - Add tips to cart
 router.post("/tips", addTips);
+
+// Points related routes
+// GET /api/cart/points - Get user points
+router.get("/points", getUserPoints);
+
+// POST /api/cart/apply-points - Apply points for discount
+router.post("/apply-points", applyPoints);
+
+// DELETE /api/cart/remove-points - Remove points discount
+router.delete("/remove-points", removePointsDiscount);
 
 export default router;
