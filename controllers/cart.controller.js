@@ -466,6 +466,18 @@ const getUserPoints = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Apply coupon on cart
+ * @route   POST /api/cart/applyCoupon
+ * @access  Private (JWT-based)
+ */
+const applyCoupon = asyncHandler(async(req,res,next)=>{
+    const coupon =await couponModel.findOne({ code: req.body.code, expires: { $gte: Date.now() } })
+    if(!coupon) return next(new ApiError('Opps coupon invalid or expired', 404))
+    let cart = await Cart.findOne({ user: req.user._id })
+  
+})
+
 export {
   addToCart,
   getCart,
