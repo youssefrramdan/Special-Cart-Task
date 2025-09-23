@@ -276,6 +276,37 @@ const addTips = asyncHandler(async (req, res, next) => {
   });
 });
 
+
+
+const updateAddress = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+  const { address, lat, lng } = req.body;
+
+  // Find or create cart
+  const cart = await Cart.findOrCreateCart(userId);
+
+  // Update address and location, automatically recalculates totals & shippingFee
+  cart.updateAddress(address, lat, lng);
+
+  // Save cart
+  await cart.save();
+
+  res.status(200).json({
+    message: "Address updated successfully",
+    data: {
+      cart: cart.items,
+      totalItems: cart.totalItems,
+      totalPrice: cart.totalPrice,
+      tips: cart.tips,
+      shippingFee: cart.shippingFee,
+      finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
+    },
+  });
+});
+
+
 export {
   addToCart,
   getCart,
@@ -284,4 +315,5 @@ export {
   clearCart,
   getCartCount,
   addTips,
+  updateAddress,
 };
