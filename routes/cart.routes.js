@@ -11,6 +11,7 @@ import {
   removePointsDiscount,
   getUserPoints,
   updateAddress,
+  applyCoupon,
 } from "../controllers/cart.controller.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
 
@@ -52,5 +53,7 @@ router.post("/apply-points", applyPoints);
 
 // DELETE /api/cart/remove-points - Remove points discount
 router.delete("/remove-points", removePointsDiscount);
+
+router.put("/applyCoupon",applyCoupon)
 
 export default router;

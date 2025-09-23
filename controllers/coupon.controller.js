@@ -18,7 +18,7 @@ const createCoupon = asyncHandler(async (req, res, next) => {
 
 /**
  * @desc    Get list of coupons
- * @route   GET /api/v1/coupons/:id
+ * @route   GET /api/v1/coupons
  * @access  Private
  */
 
@@ -30,7 +30,7 @@ const getAllCoupons = asyncHandler(async (req, res, next) => {
 
 /** 
  * @desc    Delete coupons
- * @route   DELETE /api/v1/coupons
+ * @route   DELETE /api/v1/coupons/:id
  * @access  Private
  */
 

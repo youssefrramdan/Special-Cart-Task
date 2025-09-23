@@ -5,6 +5,7 @@ import ApiError from "../utils/apiError.js";
 import Product from "../models/productModel.js";
 import Cart from "../models/cartModel.js";
 import UserModel from "../models/user.model.js";
+import couponModel from "../models/coupon.model.js";
 
 /**
  * @desc    Add product to cart
@@ -471,11 +472,21 @@ const getUserPoints = asyncHandler(async (req, res, next) => {
  * @route   POST /api/cart/applyCoupon
  * @access  Private (JWT-based)
  */
-const applyCoupon = asyncHandler(async(req,res,next)=>{
-    const coupon =await couponModel.findOne({ code: req.body.code, expires: { $gte: Date.now() } })
-    if(!coupon) return next(new ApiError('Opps coupon invalid or expired', 404))
-    let cart = await Cart.findOne({ user: req.user._id })
-  
+const applyCoupon = asyncHandler(async(req, res, next)=>{
+  const coupon = await couponModel.findOne({ code: req.body.code, expires: { $gte: Date.now() } })
+  if(!coupon) return next(new ApiError("Opps, coupon invalid or expired", 404))
+
+  const cart = await Cart.findOne({ userId: req.user._id })
+  if (!cart || cart.totalPrice <= 0) {
+    return next(new ApiError("Your cart is empty", 400));
+  }
+
+  const couponDiscount = Math.floor((cart.totalPrice * coupon.discount) / 100);
+  cart.discount = couponDiscount;
+  cart.calculateTotals();
+  await cart.save();
+
+  res.status(200).json({ message: "success", data: cart });
 })
 
 export {
@@ -490,4 +501,5 @@ export {
   removePointsDiscount,
   getUserPoints,
   updateAddress,
+  applyCoupon
 };
