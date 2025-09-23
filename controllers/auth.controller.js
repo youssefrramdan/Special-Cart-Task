@@ -10,7 +10,7 @@ const signup = asyncHandler(async (req, res, next) => {
 
   const token = jwt.sign(
     { userId: user._id, email: user.email },
-    process.env.JWT_SECRET || "aykey",
+    process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
 
@@ -31,7 +31,7 @@ const signin = asyncHandler(async (req, res, next) => {
 
   const token = jwt.sign(
     { userId: user._id, email: user.email },
-    process.env.JWT_SECRET || "aykey",
+    process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
 
@@ -41,4 +41,39 @@ const signin = asyncHandler(async (req, res, next) => {
   });
 });
 
-export { signup, signin };
+/**
+ * @desc    Protect Routes - تأمين الوصول للراوتات
+ * @route   Middleware
+ * @access  Private
+ */
+const protectedRoutes = asyncHandler(async (req, res, next) => {
+  let token;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+  if (!token) {
+    return next(
+      new ApiError(
+        "You are not logged in. Please log in to access this route",
+        401
+      )
+    );
+  }
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  const currentUser = await UserModel.findById(decoded.userId);
+
+  if (!currentUser) {
+    return next(
+      new ApiError("The user belonging to this token no longer exists", 401)
+    );
+  }
+
+  req.user = currentUser;
+  next();
+});
+
+export { signup, signin, protectedRoutes };
