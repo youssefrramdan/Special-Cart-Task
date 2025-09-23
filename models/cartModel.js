@@ -96,10 +96,9 @@ cartSchema.methods.addTips = function (tipsAmount) {
 
 // Method to apply points for discount
 // 1 point = 1 EGP discount (you can adjust this ratio)
-cartSchema.methods.applyPoints = function (
-  pointsToUse,
-  pointsConversionRate = 1
-) {
+cartSchema.methods.applyPoints = function (pointsToUse) {
+    
+  const pointsConversionRate = 1;
   if (pointsToUse <= 0) {
     this.pointsUsed = 0;
     this.discount = 0;

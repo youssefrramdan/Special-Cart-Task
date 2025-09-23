@@ -87,7 +87,7 @@ const addPointsToUser = asyncHandler(async (req, res, next) => {
 
   // Validate points amount
   const pointsToAdd = parseInt(points);
-  if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
+  if (Number.isNaN(pointsToAdd) || pointsToAdd <= 0) {
     return next(new ApiError("Points must be a valid positive number", 400));
   }
 
