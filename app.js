@@ -5,8 +5,8 @@ import cors from "cors";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import ApiError from "./utils/apiError.js";
-import globalError from "./middlewares/errorMiddleware.js"; 
-import productRouter from "./routes/productRoute.js";
+import globalError from "./middlewares/errorMiddleware.js";
+import productRouter from "./routes/product.route.js";
 import authRouter from "./routes/auth.routes.js";
 
 dotenv.config({ path: "./config/config.env" });

@@ -1,6 +1,6 @@
 import express from "express";
-import checkEmail from "../middlewares/checkExist.js";
-import { signin, signup } from "../controller/auth.controller.js";
+import { checkEmail } from "../middlewares/checkExist.js";
+import { signin, signup } from "../controllers/auth.controller.js";
 
 const authRouter = express.Router();
 

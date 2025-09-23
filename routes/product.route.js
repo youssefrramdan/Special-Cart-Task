@@ -1,6 +1,7 @@
 import express from "express";
-import { createProduct, getAllProducts, getSpecificProduct } from "../controllers/productController.js";
+import { createProduct, getAllProducts, getSpecificProduct } from "../controllers/product.controller.js";
 import createUploader from "../middlewares/uploadImageMiddleware.js";
+
 const productRouter = express.Router();
 const uploadProductImage = createUploader("products");
 

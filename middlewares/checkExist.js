@@ -6,6 +6,7 @@ const checkEmail = async (req, res, next) => {
   if (isExist) return next(new ApiError("email already exists.", 409));
   next();
 };
-export default {
+export  {
+  // eslint-disable-next-line import/prefer-default-export
   checkEmail,
 };

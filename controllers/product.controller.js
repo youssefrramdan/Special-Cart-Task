@@ -1,6 +1,7 @@
+// eslint-disable-next-line import/no-unresolved
 import slugify from "slugify"
 import asyncHandler from "express-async-handler";
-import { productModel } from "../models/productModel.js";
+import productModel from "../models/productModel.js";
 import ApiError from "../utils/apiError.js";
 
 /**
@@ -12,7 +13,7 @@ import ApiError from "../utils/apiError.js";
 const createProduct = asyncHandler(async (req, res, next) => {
     req.body.slug = slugify(req.body.name)
     if (req.file && req.file.path) {
-        req.body.imageCover = req.file.path; 
+        req.body.imageCover = req.file.path;
     }
     const product = await productModel.create(req.body);
     res.status(201).json({message: "success", data: product });
@@ -42,7 +43,7 @@ const getSpecificProduct = asyncHandler(async (req, res, next) => {
     const { id } = req.params;
     const product = await productModel.findById({ _id: id });
     if (!product) {
-        new ApiError(`product not found for this ${id}`, 400)
+        return next(new ApiError(`product not found for this ${id}`, 400));
     }
     res.status(200).json({ message: "success", data: product });
 });
