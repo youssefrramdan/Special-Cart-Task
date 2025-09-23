@@ -46,6 +46,11 @@ const cartSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    discount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     tips: {
       type: Number,
       default: 0,

@@ -4,6 +4,7 @@ import asyncHandler from "express-async-handler";
 import ApiError from "../utils/apiError.js";
 import Product from "../models/productModel.js";
 import Cart from "../models/cartModel.js";
+import couponModel from "../models/coupon.model.js";
 
 /**
  * @desc    Add product to cart
@@ -276,6 +277,17 @@ const addTips = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Apply coupon on cart
+ * @route   POST /api/cart/applyCoupon
+ * @access  Private (JWT-based)
+ */
+const applyCoupon = asyncHandler(async(req,res,next)=>{
+    const coupon =await couponModel.findOne({ code: req.body.code, expires: { $gte: Date.now() } })
+    if(!coupon) return next(new ApiError('Opps coupon invalid or expired', 404))
+    let cart = await Cart.findOne({ user: req.user._id })
+  
+})
 export {
   addToCart,
   getCart,
@@ -284,4 +296,5 @@ export {
   clearCart,
   getCartCount,
   addTips,
+  applyCoupon
 };

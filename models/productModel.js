@@ -38,9 +38,5 @@ const ProductSchema = mongoose.Schema(
   { timestamps: true }
 );
 
-// ProductSchema.post('init',function(doc){
-//     doc.imageCover = "http://localhost:3000/uploads/products/"+doc.imageCover
-//     doc.images = doc.images.map(img=>"http://localhost:3000/uploads/products/"+img)
-// })
 
 export default mongoose.model("product", ProductSchema);
