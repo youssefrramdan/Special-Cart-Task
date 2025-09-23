@@ -354,6 +354,110 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get User Points",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{URL}}/api/v1/cart/points",
+              "host": ["{{URL}}"],
+              "path": ["api", "v1", "cart", "points"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Apply Points for Discount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"points\": 50\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{URL}}/api/v1/cart/apply-points",
+              "host": ["{{URL}}"],
+              "path": ["api", "v1", "cart", "apply-points"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Points Discount",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{URL}}/api/v1/cart/remove-points",
+              "host": ["{{URL}}"],
+              "path": ["api", "v1", "cart", "remove-points"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Points to User (Testing)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"points\": 100\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{URL}}/api/v1/auth/add-points",
+              "host": ["{{URL}}"],
+              "path": ["api", "v1", "auth", "add-points"]
+            }
+          },
+          "response": []
         }
       ]
     }

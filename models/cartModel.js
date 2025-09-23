@@ -1,8 +1,5 @@
 import mongoose from "mongoose";
 
-
-
-
 // Cart schema with items as array of objects
 const cartSchema = new mongoose.Schema(
   {
@@ -60,6 +57,16 @@ const cartSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    pointsUsed: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    discount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     finalTotal: {
       type: Number,
       default: 0,
@@ -94,12 +101,16 @@ function getDistance(lat1, lng1, lat2, lng2) {
   return R * c;
 }
 
-
-
 // Method to calculate totals
 cartSchema.methods.calculateTotals = function () {
-  this.totalItems = this.items.reduce((total, item) => total + item.quantity, 0);
-  this.totalPrice = this.items.reduce((total, item) => total + item.price * item.quantity, 0);
+  this.totalItems = this.items.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+  this.totalPrice = this.items.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
 
   // حساب الشحن حسب المسافة إذا تم تحديد الموقع
   if (this.location.lat != null && this.location.lng != null) {
@@ -128,15 +139,41 @@ cartSchema.methods.calculateTotals = function () {
     this.shippingFee = fee;
   }
 
-  this.finalTotal = this.totalPrice + this.tips + this.shippingFee;
+  // Calculate final total: totalPrice - discount + tips + shippingFee
+  this.finalTotal = Math.max(
+    0,
+    this.totalPrice - this.discount + this.tips + this.shippingFee
+  );
   return this;
 };
-
 
 // Method to add tips and calculate final total
 cartSchema.methods.addTips = function (tipsAmount) {
   this.tips = Math.max(0, tipsAmount || 0); // Ensure tips is not negative
-  this.finalTotal = this.totalPrice + this.tips;
+  this.calculateTotals(); // Recalculate with discount consideration
+  return this;
+};
+
+// Method to apply points for discount
+// 1 point = 1 EGP discount (you can adjust this ratio)
+cartSchema.methods.applyPoints = function (pointsToUse) {
+  const pointsConversionRate = 1;
+  if (pointsToUse <= 0) {
+    this.pointsUsed = 0;
+    this.discount = 0;
+    this.calculateTotals();
+    return this;
+  }
+
+  // Calculate maximum discount possible (can't exceed total price)
+  const maxDiscount = this.totalPrice;
+  const requestedDiscount = pointsToUse * pointsConversionRate;
+
+  // Apply the smaller of requested discount or max possible discount
+  this.discount = Math.min(requestedDiscount, maxDiscount);
+  this.pointsUsed = Math.ceil(this.discount / pointsConversionRate);
+
+  this.calculateTotals();
   return this;
 };
 
@@ -198,6 +235,9 @@ cartSchema.methods.clearCart = function () {
   this.totalItems = 0;
   this.totalPrice = 0;
   this.tips = 0;
+  this.pointsUsed = 0;
+  this.discount = 0;
+  this.shippingFee = 0;
   this.finalTotal = 0;
   return this;
 };
@@ -222,6 +262,8 @@ cartSchema.statics.findOrCreateCart = async function (userId) {
       totalItems: 0,
       totalPrice: 0,
       tips: 0,
+      pointsUsed: 0,
+      discount: 0,
       finalTotal: 0,
     });
     await cart.save();

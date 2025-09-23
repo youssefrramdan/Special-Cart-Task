@@ -4,6 +4,7 @@ import asyncHandler from "express-async-handler";
 import ApiError from "../utils/apiError.js";
 import Product from "../models/productModel.js";
 import Cart from "../models/cartModel.js";
+import UserModel from "../models/user.model.js";
 
 /**
  * @desc    Add product to cart
@@ -75,7 +76,12 @@ const addToCart = asyncHandler(async (req, res, next) => {
       totalItems: cart.totalItems,
       totalPrice: cart.totalPrice,
       tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -98,7 +104,12 @@ const getCart = asyncHandler(async (req, res, next) => {
       totalItems: cart.totalItems,
       totalPrice: cart.totalPrice,
       tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -155,7 +166,12 @@ const updateCartItem = asyncHandler(async (req, res, next) => {
       totalItems: cart.totalItems,
       totalPrice: cart.totalPrice,
       tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -189,7 +205,12 @@ const removeFromCart = asyncHandler(async (req, res, next) => {
       totalItems: cart.totalItems,
       totalPrice: cart.totalPrice,
       tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -216,7 +237,12 @@ const clearCart = asyncHandler(async (req, res, next) => {
       totalItems: 0,
       totalPrice: 0,
       tips: 0,
+      pointsUsed: 0,
+      discount: 0,
+      shippingFee: 0,
       finalTotal: 0,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -271,13 +297,78 @@ const addTips = asyncHandler(async (req, res, next) => {
       totalItems: cart.totalItems,
       totalPrice: cart.totalPrice,
       tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
 
+/**
+ * @desc    Apply points for discount
+ * @route   POST /api/cart/apply-points
+ * @access  Private (JWT-based)
+ */
+const applyPoints = asyncHandler(async (req, res, next) => {
+  const { points } = req.body;
+  const userId = req.user._id;
 
+  // Validate points amount
+  const pointsToUse = parseInt(points);
+  if (Number.isNaN(pointsToUse) || pointsToUse < 0) {
+    return next(new ApiError("Points must be a valid positive number", 400));
+  }
 
+  // Get user to check available points
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return next(new ApiError("User not found", 404));
+  }
+
+  // Check if user has enough points
+  if (pointsToUse > user.points) {
+    return next(
+      new ApiError(`You only have ${user.points} points available`, 400)
+    );
+  }
+
+  // Find cart for this user
+  const cart = await Cart.findOrCreateCart(userId);
+
+  // Apply points for discount
+  cart.applyPoints(pointsToUse);
+  await cart.save();
+
+  // Update user points (deduct used points)
+  user.points -= cart.pointsUsed;
+  await user.save();
+
+  res.status(200).json({
+    message: "success",
+    data: {
+      cart: cart.items,
+      totalItems: cart.totalItems,
+      totalPrice: cart.totalPrice,
+      tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      shippingFee: cart.shippingFee,
+      finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
+      remainingPoints: user.points,
+    },
+  });
+});
+
+/**
+ * @desc    Update address and location
+ * @route   PUT /api/cart/address
+ * @access  Private (JWT-based)
+ */
 const updateAddress = asyncHandler(async (req, res, next) => {
   const userId = req.user._id;
   const { address, lat, lng } = req.body;
@@ -298,6 +389,8 @@ const updateAddress = asyncHandler(async (req, res, next) => {
       totalItems: cart.totalItems,
       totalPrice: cart.totalPrice,
       tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
       shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
       address: cart.address,
@@ -306,6 +399,72 @@ const updateAddress = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Remove points discount
+ * @route   DELETE /api/cart/remove-points
+ * @access  Private (JWT-based)
+ */
+const removePointsDiscount = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+
+  // Get user to restore points
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return next(new ApiError("User not found", 404));
+  }
+
+  // Find cart for this user
+  const cart = await Cart.findOrCreateCart(userId);
+
+  // Restore points to user
+  user.points += cart.pointsUsed;
+  await user.save();
+
+  // Remove points discount from cart
+  cart.pointsUsed = 0;
+  cart.discount = 0;
+  cart.calculateTotals();
+  await cart.save();
+
+  res.status(200).json({
+    message: "success",
+    data: {
+      cart: cart.items,
+      totalItems: cart.totalItems,
+      totalPrice: cart.totalPrice,
+      tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      shippingFee: cart.shippingFee,
+      finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
+      remainingPoints: user.points,
+    },
+  });
+});
+
+/**
+ * @desc    Get user points
+ * @route   GET /api/cart/points
+ * @access  Private (JWT-based)
+ */
+const getUserPoints = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+
+  // Get user points
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return next(new ApiError("User not found", 404));
+  }
+
+  res.status(200).json({
+    message: "success",
+    data: {
+      points: user.points,
+    },
+  });
+});
 
 export {
   addToCart,
@@ -315,5 +474,8 @@ export {
   clearCart,
   getCartCount,
   addTips,
+  applyPoints,
+  removePointsDiscount,
+  getUserPoints,
   updateAddress,
 };
