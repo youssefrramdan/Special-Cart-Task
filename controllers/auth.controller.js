@@ -74,4 +74,39 @@ const protectedRoutes = asyncHandler(async (req, res, next) => {
   next();
 });
 
-export { signup, signin, protectedRoutes };
+/**
+ * @desc    Add points to user (admin function)
+ * @route   POST /api/auth/add-points
+ * @access  Private
+ */
+const addPointsToUser = asyncHandler(async (req, res, next) => {
+  const { userId, points } = req.body;
+
+  // Validate points amount
+  const pointsToAdd = parseInt(points, 10);
+  if (Number.isNaN(pointsToAdd) || pointsToAdd <= 0) {
+    return next(new ApiError("Points must be a valid positive number", 400));
+  }
+
+  // Find user
+  const user = await UserModel.findById(userId);
+  if (!user) {
+    return next(new ApiError("User not found", 404));
+  }
+
+  // Add points to user
+  user.points = (user.points || 0) + pointsToAdd;
+  await user.save();
+
+  res.status(200).json({
+    message: "success",
+    data: {
+      userId: user._id,
+      email: user.email,
+      totalPoints: user.points,
+      pointsAdded: pointsToAdd,
+    },
+  });
+});
+
+export { signup, signin, protectedRoutes, addPointsToUser };

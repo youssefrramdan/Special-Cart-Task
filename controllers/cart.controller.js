@@ -78,7 +78,10 @@ const addToCart = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -103,7 +106,10 @@ const getCart = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -162,7 +168,10 @@ const updateCartItem = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -198,7 +207,10 @@ const removeFromCart = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -227,7 +239,10 @@ const clearCart = asyncHandler(async (req, res, next) => {
       tips: 0,
       pointsUsed: 0,
       discount: 0,
+      shippingFee: 0,
       finalTotal: 0,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -284,7 +299,10 @@ const addTips = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -337,8 +355,46 @@ const applyPoints = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
       remainingPoints: user.points,
+    },
+  });
+});
+
+/**
+ * @desc    Update address and location
+ * @route   PUT /api/cart/address
+ * @access  Private (JWT-based)
+ */
+const updateAddress = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+  const { address, lat, lng } = req.body;
+
+  // Find or create cart
+  const cart = await Cart.findOrCreateCart(userId);
+
+  // Update address and location, automatically recalculates totals & shippingFee
+  cart.updateAddress(address, lat, lng);
+
+  // Save cart
+  await cart.save();
+
+  res.status(200).json({
+    message: "Address updated successfully",
+    data: {
+      cart: cart.items,
+      totalItems: cart.totalItems,
+      totalPrice: cart.totalPrice,
+      tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      shippingFee: cart.shippingFee,
+      finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
     },
   });
 });
@@ -379,7 +435,10 @@ const removePointsDiscount = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
       remainingPoints: user.points,
     },
   });
@@ -418,4 +477,5 @@ export {
   applyPoints,
   removePointsDiscount,
   getUserPoints,
+  updateAddress,
 };
