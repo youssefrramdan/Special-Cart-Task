@@ -80,7 +80,8 @@ const protectedRoutes = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 const addPointsToUser = asyncHandler(async (req, res, next) => {
-  const { userId, points } = req.body;
+  const { points } = req.body;
+  const userId = req.user._id;
 
   // Validate points amount
   const pointsToAdd = parseInt(points, 10);

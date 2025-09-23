@@ -6,12 +6,9 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import ApiError from "./utils/apiError.js";
 import globalError from "./middlewares/errorMiddleware.js";
-
-
-
-import productRouter from "./routs/product.route.js";
-import authRouter from "./routs/auth.routes.js";
-import router from "./routs/cart.routes.js";
+import productRouter from "./routes/product.route.js";
+import authRouter from './routes/auth.routes.js';
+import cartRouter from './routes/cart.routes.js';
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -42,7 +39,7 @@ app.use("/api/v1/products", productRouter);
 
 //  here add routes like app.use(,)
 app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/cart", router);
+app.use("/api/v1/cart", cartRouter);
 
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
