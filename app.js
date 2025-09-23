@@ -8,42 +8,42 @@ import ApiError from "./utils/apiError.js";
 import globalError from "./middlewares/errorMiddleware.js";
 import productRouter from "./routes/product.route.js";
 import authRouter from "./routes/auth.routes.js";
+import cartRouter from "./routes/cart.routes.js";
 
 dotenv.config({ path: "./config/config.env" });
 
 const app = express();
 
-
 const corsOptions = {
-    origin: true,
-    credentials: true,
-    optionsSuccessStatus: 200,
-  };
+  origin: true,
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
 
-  app.use(cors(corsOptions));
-  app.options("*", cors(corsOptions));
-  app.use(compression());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+app.use(compression());
 
-  // middlewares
-  app.use(express.json());
-  app.use(cookieParser());
-  app.use(express.urlencoded({ extended: true }));
+// middlewares
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
 
-  if (process.env.NODE_ENV === "development") {
-    app.use(morgan("dev"));
-    console.log(`mode : ${process.env.NODE_ENV}`);
-  }
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+  console.log(`mode : ${process.env.NODE_ENV}`);
+}
 
 // mount Routes
 app.use("/api/v1/products", productRouter);
 
 //  here add routes like app.use(,)
 app.use("/api/v1/auth", authRouter);
-
+app.use("/api/v1/cart", cartRouter);
 
 app.all("*", (req, res, next) => {
-    next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
-  });
+  next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
+});
 
-  app.use(globalError);
+app.use(globalError);
 export default app;
