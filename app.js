@@ -6,6 +6,7 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import ApiError from "./utils/apiError.js";
 import globalError from "./middlewares/errorMiddleware.js"; 
+import productRouter from "./routes/productRoute.js";
 import authRouter from "./routes/auth.routes.js";
 
 dotenv.config({ path: "./config/config.env" });
@@ -34,6 +35,8 @@ const corsOptions = {
   }
 
 // mount Routes
+app.use("/api/v1/products", productRouter);
+
 //  here add routes like app.use(,)
 app.use("/api/v1/auth", authRouter);
 
@@ -43,5 +46,4 @@ app.all("*", (req, res, next) => {
   });
 
   app.use(globalError);
-  
-  export default app;
+export default app;
