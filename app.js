@@ -38,8 +38,6 @@ if (process.env.NODE_ENV === "development") {
 // mount Routes
 app.use("/api/v1/products", productRouter);
 app.use("/api/v1/coupons", couponRouter);
-
-//  here add routes like app.use(,)
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/cart", cartRouter);
 
