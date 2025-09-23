@@ -1,18 +1,16 @@
-import jwt from "jsonwebtoken"
-import bcrypt from 'bcrypt'
-import { userModel } from "../models/user.model.js"
-import { catchError } from "../middlewares/catchGlobalError.js";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import asyncHandler from "express-async-handler";
 import ApiError from "../utils/apiError.js";
+import UserModel from "../models/user.model.js";
 
-
-
-const signup = catchError(async (req, res, next) => {
-  const user = new userModel(req.body);
+const signup = asyncHandler(async (req, res, next) => {
+  const user = new UserModel(req.body);
   await user.save();
 
   const token = jwt.sign(
     { userId: user._id, email: user.email },
-    process.env.JWT_SECRET || "aykey", 
+    process.env.JWT_SECRET || "aykey",
     { expiresIn: "7d" }
   );
 
@@ -22,10 +20,10 @@ const signup = catchError(async (req, res, next) => {
   });
 });
 
-const signin = catchError(async (req, res, next) => {
+const signin = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
-  const user = await userModel.findOne({ email });
+  const user = await UserModel.findOne({ email });
   if (!user) return next(new ApiError("Incorrect email or password", 401));
 
   const match = await bcrypt.compare(password, user.password);
@@ -43,7 +41,4 @@ const signin = catchError(async (req, res, next) => {
   });
 });
 
-export{
-    signup,
-    signin,
-}
+export { signup, signin };

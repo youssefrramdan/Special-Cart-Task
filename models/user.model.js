@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-
 import bcrypt from 'bcrypt'
+
 const userSchema=mongoose.Schema({
     name:{
         type:String,
@@ -13,30 +13,12 @@ const userSchema=mongoose.Schema({
         trim:true,
         unique:true,
         required:true,
-        
     },
     password:{
         type:String,
         required:true,
     },
-    
-    //  Reference to Cart
-    // cart: { type: mongoose.Schema.Types.ObjectId, ref: "Cart" }
 
-    //  User Points some logic about points while browsing in website 
-    // points: { type: Number, default: 0 }
-
-    // Location (lat + lng )
-    // location: {
-    //   lat: { type: Number },
-    //   lng: { type: Number }
-    // }
-   
- 
-
-    
-    
-    
 },{timestamps:true})
 
 userSchema.pre('save',function(){
@@ -49,5 +31,4 @@ userSchema.pre('findOneAndUpdate',function(){
     console.log(this);
 })
 
-
-export const userModel=mongoose.model('user',userSchema);
+export default mongoose.model('user',userSchema);
