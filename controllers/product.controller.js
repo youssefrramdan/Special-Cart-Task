@@ -26,11 +26,8 @@ const createProduct = asyncHandler(async (req, res, next) => {
  */
 
 const getAllProducts = asyncHandler(async (req, res, next) => {
-    const page = req.query.page * 1 || 1 ;
-    const limit = req.query.limit * 1 || 5;
-    const skip = (page -1) * limit
-    const products = await productModel.find({}).skip(skip).limit(limit);
-    res.status(200).json({ message: "success", results: products.length, page, data: products });
+    const products = await productModel.find({})
+    res.status(200).json({ message: "success", results: products.length, data: products });
 });
 
 /**
