@@ -351,6 +351,11 @@ const applyPoints = asyncHandler(async (req, res, next) => {
   // Find cart for this user
   const cart = await Cart.findOrCreateCart(userId);
 
+  // Check if cart is empty
+  if (!cart || cart.totalPrice <= 0 || cart.items.length === 0) {
+    return next(new ApiError("You cannot apply points to an empty cart", 400));
+  }
+
   // Apply points for discount
   cart.applyPoints(pointsToUse);
   await cart.save();

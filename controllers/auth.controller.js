@@ -7,21 +7,58 @@ import UserModel from "../models/user.model.js";
 
 dotenv.config();
 const signup = asyncHandler(async (req, res, next) => {
-  const user = new UserModel(req.body);
+  const { name, email, password } = req.body;
+
+  // Input validation
+  if (!name || !email || !password) {
+    return next(new ApiError("Name, email, and password are required", 400));
+  }
+
+  if (password.length < 6) {
+    return next(
+      new ApiError("Password must be at least 6 characters long", 400)
+    );
+  }
+
+  // Check if user already exists
+  const existingUser = await UserModel.findOne({ email });
+  if (existingUser) {
+    return next(new ApiError("User with this email already exists", 400));
+  }
+
+  // Create user (password will be hashed by pre-save middleware)
+  const user = new UserModel({ name, email, password });
   await user.save();
 
-  const token = jwt.sign({ userId: user._id, email: user.email }, "task", {
-    expiresIn: "7d",
-  });
+  const token = jwt.sign(
+    { userId: user._id, email: user.email },
+    process.env.JWT_SECRET_KEY,
+    {
+      expiresIn: process.env.JWT_EXPIRE_TIME,
+    }
+  );
 
   res.status(201).json({
     status: "success",
     token,
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        points: user.points,
+      },
+    },
   });
 });
 
 const signin = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
+
+  // Input validation
+  if (!email || !password) {
+    return next(new ApiError("Email and password are required", 400));
+  }
 
   const user = await UserModel.findOne({ email });
   if (!user) return next(new ApiError("Incorrect email or password", 401));
@@ -29,13 +66,25 @@ const signin = asyncHandler(async (req, res, next) => {
   const match = await bcrypt.compare(password, user.password);
   if (!match) return next(new ApiError("Incorrect email or password", 401));
 
-  const token = jwt.sign({ userId: user._id, email: user.email }, "task", {
-    expiresIn: "7d",
-  });
+  const token = jwt.sign(
+    { userId: user._id, email: user.email },
+    process.env.JWT_SECRET_KEY,
+    {
+      expiresIn: process.env.JWT_EXPIRE_TIME,
+    }
+  );
 
   res.json({
     status: "success",
     token,
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        points: user.points,
+      },
+    },
   });
 });
 
@@ -61,7 +110,7 @@ const protectedRoutes = asyncHandler(async (req, res, next) => {
     );
   }
 
-  const decoded = jwt.verify(token, "task");
+  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
   const currentUser = await UserModel.findById(decoded.userId);
 
   if (!currentUser) {
