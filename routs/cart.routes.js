@@ -7,6 +7,7 @@ import {
   clearCart,
   getCartCount,
   addTips,
+  updateAddress,
 } from "../controllers/cart.controller.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
 
@@ -26,6 +27,9 @@ router.post("/add", addToCart);
 
 // PUT /api/cart/update - Update cart item quantity
 router.put("/update", updateCartItem);
+
+// PUT /api/cart/address - Update address & location
+router.put("/address", updateAddress);
 
 // DELETE /api/cart/remove/:productId - Remove item from cart
 router.delete("/remove/:productId", removeFromCart);
