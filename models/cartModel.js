@@ -67,6 +67,15 @@ const cartSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    couponCode: {
+      type: String,
+      default: null,
+    },
+    couponDiscount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     finalTotal: {
       type: Number,
       default: 0,
@@ -124,20 +133,25 @@ cartSchema.methods.calculateTotals = function () {
     let fee = 0;
     const zoneValues = Object.values(zones);
 
-    for (const zone of zoneValues) {
-      if (distance >= zone.minDistance && distance < zone.maxDistance) {
-        fee = zone.fee;
-        break;
-      }
-    }
+    const matchingZone = zoneValues.find(
+      (zone) => distance >= zone.minDistance && distance < zone.maxDistance
+    );
 
-    // لو المسافة أكبر من آخر zone، نخلي fee ثابت على آخر zone
-    if (distance >= zoneValues[zoneValues.length - 1].maxDistance) {
-      fee = zoneValues[zoneValues.length - 1].fee;
+    if (matchingZone) {
+      const { fee: zoneFee } = matchingZone;
+      fee = zoneFee;
+    } else if (distance >= zoneValues[zoneValues.length - 1].maxDistance) {
+      // لو المسافة أكبر من آخر zone، نخلي fee ثابت على آخر zone
+      const lastZone = zoneValues[zoneValues.length - 1];
+      const { fee: lastZoneFee } = lastZone;
+      fee = lastZoneFee;
     }
 
     this.shippingFee = fee;
   }
+
+  // Calculate total discount (points + coupon)
+  this.discount = this.pointsUsed + this.couponDiscount;
 
   // Calculate final total: totalPrice - discount + tips + shippingFee
   this.finalTotal = Math.max(
@@ -160,19 +174,42 @@ cartSchema.methods.applyPoints = function (pointsToUse) {
   const pointsConversionRate = 1;
   if (pointsToUse <= 0) {
     this.pointsUsed = 0;
-    this.discount = 0;
     this.calculateTotals();
     return this;
   }
 
-  // Calculate maximum discount possible (can't exceed total price)
-  const maxDiscount = this.totalPrice;
+  // Calculate maximum discount possible (can't exceed total price - coupon discount)
+  const maxDiscount = Math.max(0, this.totalPrice - this.couponDiscount);
   const requestedDiscount = pointsToUse * pointsConversionRate;
 
   // Apply the smaller of requested discount or max possible discount
-  this.discount = Math.min(requestedDiscount, maxDiscount);
-  this.pointsUsed = Math.ceil(this.discount / pointsConversionRate);
+  this.pointsUsed = Math.min(requestedDiscount, maxDiscount);
 
+  this.calculateTotals();
+  return this;
+};
+
+// Method to apply coupon discount
+cartSchema.methods.applyCoupon = function (couponCode, discountPercentage) {
+  // Check if coupon is already applied
+  if (this.couponCode) {
+    throw new Error("Coupon already applied");
+  }
+
+  // Calculate coupon discount
+  this.couponCode = couponCode;
+  this.couponDiscount = Math.floor(
+    (this.totalPrice * discountPercentage) / 100
+  );
+
+  this.calculateTotals();
+  return this;
+};
+
+// Method to remove coupon
+cartSchema.methods.removeCoupon = function () {
+  this.couponCode = null;
+  this.couponDiscount = 0;
   this.calculateTotals();
   return this;
 };
@@ -237,6 +274,8 @@ cartSchema.methods.clearCart = function () {
   this.tips = 0;
   this.pointsUsed = 0;
   this.discount = 0;
+  this.couponCode = null;
+  this.couponDiscount = 0;
   this.shippingFee = 0;
   this.finalTotal = 0;
   return this;
@@ -264,6 +303,8 @@ cartSchema.statics.findOrCreateCart = async function (userId) {
       tips: 0,
       pointsUsed: 0,
       discount: 0,
+      couponCode: null,
+      couponDiscount: 0,
       finalTotal: 0,
     });
     await cart.save();

@@ -79,6 +79,8 @@ const addToCart = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      couponCode: cart.couponCode,
+      couponDiscount: cart.couponDiscount,
       shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
       address: cart.address,
@@ -107,6 +109,8 @@ const getCart = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      couponCode: cart.couponCode,
+      couponDiscount: cart.couponDiscount,
       shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
       address: cart.address,
@@ -169,6 +173,8 @@ const updateCartItem = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      couponCode: cart.couponCode,
+      couponDiscount: cart.couponDiscount,
       shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
       address: cart.address,
@@ -208,6 +214,8 @@ const removeFromCart = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      couponCode: cart.couponCode,
+      couponDiscount: cart.couponDiscount,
       shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
       address: cart.address,
@@ -240,6 +248,8 @@ const clearCart = asyncHandler(async (req, res, next) => {
       tips: 0,
       pointsUsed: 0,
       discount: 0,
+      couponCode: null,
+      couponDiscount: 0,
       shippingFee: 0,
       finalTotal: 0,
       address: cart.address,
@@ -300,6 +310,8 @@ const addTips = asyncHandler(async (req, res, next) => {
       tips: cart.tips,
       pointsUsed: cart.pointsUsed,
       discount: cart.discount,
+      couponCode: cart.couponCode,
+      couponDiscount: cart.couponDiscount,
       shippingFee: cart.shippingFee,
       finalTotal: cart.finalTotal,
       address: cart.address,
@@ -472,22 +484,97 @@ const getUserPoints = asyncHandler(async (req, res, next) => {
  * @route   POST /api/cart/applyCoupon
  * @access  Private (JWT-based)
  */
-const applyCoupon = asyncHandler(async(req, res, next)=>{
-  const coupon = await couponModel.findOne({ code: req.body.code, expires: { $gte: Date.now() } })
-  if(!coupon) return next(new ApiError("Opps, coupon invalid or expired", 404))
+const applyCoupon = asyncHandler(async (req, res, next) => {
+  const { code } = req.body;
 
-  const cart = await Cart.findOne({ userId: req.user._id })
+  // Find coupon
+  const coupon = await couponModel.findOne({
+    code: code,
+    expires: { $gte: Date.now() },
+  });
+  if (!coupon) {
+    return next(new ApiError("Opps, coupon invalid or expired", 404));
+  }
+
+  // Find cart
+  const cart = await Cart.findOrCreateCart(req.user._id);
   if (!cart || cart.totalPrice <= 0) {
     return next(new ApiError("Your cart is empty", 400));
   }
 
-  const couponDiscount = Math.floor((cart.totalPrice * coupon.discount) / 100);
-  cart.discount = couponDiscount;
-  cart.calculateTotals();
+  // Check if coupon is already applied
+  if (cart.couponCode) {
+    return next(new ApiError("Coupon already applied", 400));
+  }
+
+  try {
+    // Apply coupon
+    cart.applyCoupon(coupon.code, coupon.discount);
+    await cart.save();
+
+    res.status(200).json({
+      message: "Coupon applied successfully",
+      data: {
+        cart: cart.items,
+        totalItems: cart.totalItems,
+        totalPrice: cart.totalPrice,
+        tips: cart.tips,
+        pointsUsed: cart.pointsUsed,
+        discount: cart.discount,
+        couponCode: cart.couponCode,
+        couponDiscount: cart.couponDiscount,
+        shippingFee: cart.shippingFee,
+        finalTotal: cart.finalTotal,
+        address: cart.address,
+        location: cart.location,
+      },
+    });
+  } catch (error) {
+    return next(new ApiError(error.message, 400));
+  }
+});
+
+/**
+ * @desc    Remove coupon from cart
+ * @route   DELETE /api/cart/removeCoupon
+ * @access  Private (JWT-based)
+ */
+const removeCoupon = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+
+  // Find cart
+  const cart = await Cart.findOrCreateCart(userId);
+  if (!cart) {
+    return next(new ApiError("Cart not found", 404));
+  }
+
+  // Check if coupon is applied
+  if (!cart.couponCode) {
+    return next(new ApiError("No coupon applied", 400));
+  }
+
+  // Remove coupon
+  cart.removeCoupon();
   await cart.save();
 
-  res.status(200).json({ message: "success", data: cart });
-})
+  res.status(200).json({
+    message: "Coupon removed successfully",
+    data: {
+      cart: cart.items,
+      totalItems: cart.totalItems,
+      totalPrice: cart.totalPrice,
+      tips: cart.tips,
+      pointsUsed: cart.pointsUsed,
+      discount: cart.discount,
+      couponCode: cart.couponCode,
+      couponDiscount: cart.couponDiscount,
+      shippingFee: cart.shippingFee,
+      finalTotal: cart.finalTotal,
+      address: cart.address,
+      location: cart.location,
+    },
+  });
+});
 
 export {
   addToCart,
@@ -501,5 +588,6 @@ export {
   removePointsDiscount,
   getUserPoints,
   updateAddress,
-  applyCoupon
+  applyCoupon,
+  removeCoupon,
 };
