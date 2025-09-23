@@ -26,47 +26,32 @@ Before running this application, make sure you have the following installed:
 ## 🛠️ Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd task-cart-api
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Environment Configuration**
-   
+
    Create a `.env` file in the root directory or update `config/config.env`:
-   ```env
-   # Server Configuration
-   PORT=8000
-   NODE_ENV=development
-   
-   # Database Configuration
-   DB_URI=mongodb://localhost:27017/task-cart
-   # Or for MongoDB Atlas:
-   # DB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/<database>
-   
-   # JWT Configuration
-   JWT_SECRET_KEY=your-super-secret-jwt-key
-   JWT_EXPIRE_TIME=3d
-   
-   # Cloudinary Configuration (for image uploads)
-   CLOUDINARY_CLOUD_NAME=your-cloud-name
-   CLOUDINARY_API_KEY=your-api-key
-   CLOUDINARY_API_SECRET=your-api-secret
-   ```
 
 4. **Start the application**
-   
+
    For development:
+
    ```bash
    npm run start:dev
    ```
-   
+
    For production:
+
    ```bash
    npm run start:prod
    ```
@@ -93,22 +78,17 @@ Before running this application, make sure you have the following installed:
 ## 🔧 API Endpoints
 
 ### Base URL
+
 ```
 http://localhost:8000/api/v1
 ```
 
 ### Authentication
-- `POST /auth/register` - User registration
+
+- `POST /auth/signup` - User registration
 - `POST /auth/login` - User login
-- `POST /auth/logout` - User logout
 
-### Users
-- `GET /users` - Get all users
-- `GET /users/:id` - Get user by ID
-- `PUT /users/:id` - Update user
-- `DELETE /users/:id` - Delete user
-
-*Note: Add your specific endpoints as you develop them*
+_Note: Add your specific endpoints as you develop them_
 
 ## 🛡️ Security Features
 
@@ -127,16 +107,19 @@ This project includes a `Procfile` for Heroku deployment:
 
 1. **Install Heroku CLI**
 2. **Login to Heroku**
+
    ```bash
    heroku login
    ```
 
 3. **Create Heroku app**
+
    ```bash
    heroku create your-app-name
    ```
 
 4. **Set environment variables**
+
    ```bash
    heroku config:set NODE_ENV=production
    heroku config:set DB_URI=your-mongodb-uri
@@ -149,47 +132,10 @@ This project includes a `Procfile` for Heroku deployment:
    git push heroku main
    ```
 
-### Other Deployment Options
-
-- **Vercel** - Serverless deployment
-- **Railway** - Simple cloud deployment
-- **DigitalOcean App Platform** - Container-based deployment
-- **AWS EC2** - Virtual machine deployment
-
-## 🧪 Testing
-
-```bash
-# Run tests (when implemented)
-npm test
-
-# Run tests with coverage
-npm run test:coverage
-```
-
-## 📝 Development
-
 ### Available Scripts
 
 - `npm run start:dev` - Start development server with nodemon
 - `npm run start:prod` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint errors
-- `npm run format` - Format code with Prettier
-
-### Code Style
-
-This project uses:
-- **ESLint** - JavaScript linting
-- **Prettier** - Code formatting
-- **Airbnb Style Guide** - JavaScript style guide
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ### Commit Convention
 
@@ -202,40 +148,6 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 - `refactor:` - Code refactoring
 - `test:` - Test additions or modifications
 - `chore:` - Build process or auxiliary tool changes
-
-## 📄 License
-
-This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Error**
-   - Check MongoDB is running
-   - Verify DB_URI in environment variables
-   - Check network connectivity for MongoDB Atlas
-
-2. **Port Already in Use**
-   - Change PORT in environment variables
-   - Kill process using the port: `lsof -ti:8000 | xargs kill -9`
-
-3. **Cloudinary Upload Issues**
-   - Verify Cloudinary credentials
-   - Check file format restrictions
-   - Ensure proper middleware configuration
-
-### Getting Help
-
-- Create an issue in the repository
-- Check existing issues for solutions
-- Review the documentation
-
-## 📞 Contact
-
-- **Author**: Your Name
-- **Email**: your.email@example.com
-- **GitHub**: [@yourusername](https://github.com/yourusername)
 
 ---
 
