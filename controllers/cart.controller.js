@@ -7,6 +7,191 @@ import Cart from "../models/cartModel.js";
 import UserModel from "../models/user.model.js";
 import couponModel from "../models/coupon.model.js";
 
+// Cart business logic - moved from schema to controller
+const zones = {
+  zone1: { minDistance: 0, maxDistance: 5, fee: 15 },
+  zone2: { minDistance: 5, maxDistance: 10, fee: 25 },
+  zone3: { minDistance: 10, maxDistance: 15, fee: 35 },
+  zone4: { minDistance: 15, maxDistance: 25, fee: 50 },
+};
+
+const storeLocation = { lat: 30.0444, lng: 31.2357 };
+
+// Helper function to calculate distance (Haversine formula)
+function getDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Helper function to calculate shipping fee
+function calculateShippingFee(lat, lng) {
+  // If no location provided, no shipping fee
+  if (lat == null || lng == null) {
+    return 0;
+  }
+
+  // Calculate distance from store
+  const distance = getDistance(storeLocation.lat, storeLocation.lng, lat, lng);
+
+  // Find appropriate zone
+  if (distance < 5) return zones.zone1.fee;
+  if (distance < 10) return zones.zone2.fee;
+  if (distance < 15) return zones.zone3.fee;
+  return zones.zone4.fee; // For distances 15km and above
+}
+
+// Helper function to calculate cart totals
+function calculateCartTotals(cart) {
+  // Calculate basic totals
+  cart.totalItems = cart.items.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+  cart.totalPrice = cart.items.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
+
+  // Calculate shipping fee
+  cart.shippingFee = calculateShippingFee(cart.location.lat, cart.location.lng);
+
+  // Calculate total discount
+  cart.discount = cart.pointsUsed + cart.couponDiscount;
+
+  // Calculate final total
+  cart.finalTotal = Math.max(
+    0,
+    cart.totalPrice - cart.discount + cart.tips + cart.shippingFee
+  );
+
+  return cart;
+}
+
+// Helper function to add item to cart
+function addItemToCart(cart, productData) {
+  const existingItem = cart.items.find(
+    (item) => item.productId.toString() === productData.productId.toString()
+  );
+
+  if (existingItem) {
+    existingItem.quantity += productData.quantity;
+  } else {
+    cart.items.push(productData);
+  }
+
+  return calculateCartTotals(cart);
+}
+
+// Helper function to update item quantity
+function updateCartItemQuantity(cart, productId, newQuantity) {
+  const item = cart.items.find(
+    (cartItem) => cartItem.productId.toString() === productId.toString()
+  );
+
+  if (!item) return false;
+
+  if (newQuantity <= 0) {
+    // Remove item
+    cart.items = cart.items.filter(
+      (cartItem) => cartItem.productId.toString() !== productId.toString()
+    );
+  } else {
+    // Update quantity
+    item.quantity = newQuantity;
+  }
+
+  calculateCartTotals(cart);
+  return true;
+}
+
+// Helper function to remove item from cart
+function removeItemFromCart(cart, productId) {
+  const initialLength = cart.items.length;
+  cart.items = cart.items.filter(
+    (cartItem) => cartItem.productId.toString() !== productId.toString()
+  );
+
+  if (cart.items.length < initialLength) {
+    calculateCartTotals(cart);
+    return true;
+  }
+  return false;
+}
+
+// Helper function to clear cart
+function clearCartItems(cart) {
+  // Clear all cart data
+  Object.assign(cart, {
+    items: [],
+    totalItems: 0,
+    totalPrice: 0,
+    tips: 0,
+    pointsUsed: 0,
+    discount: 0,
+    couponCode: null,
+    couponDiscount: 0,
+    shippingFee: 0,
+    finalTotal: 0,
+  });
+  return cart;
+}
+
+// Helper function to add tips
+function addTipsToCart(cart, tipsAmount) {
+  cart.tips = Math.max(0, tipsAmount || 0);
+  return calculateCartTotals(cart);
+}
+
+// Helper function to apply points
+function applyPointsToCart(cart, pointsToUse) {
+  if (pointsToUse <= 0) {
+    cart.pointsUsed = 0;
+  } else {
+    // 1 point = 1 EGP discount
+    const maxAllowedDiscount = cart.totalPrice - cart.couponDiscount;
+    cart.pointsUsed = Math.min(pointsToUse, Math.max(0, maxAllowedDiscount));
+  }
+
+  return calculateCartTotals(cart);
+}
+
+// Helper function to apply coupon
+function applyCouponToCart(cart, couponCode, discountPercentage) {
+  if (cart.couponCode) {
+    throw new Error("Coupon already applied");
+  }
+
+  cart.couponCode = couponCode;
+  cart.couponDiscount = Math.floor(
+    (cart.totalPrice * discountPercentage) / 100
+  );
+
+  return calculateCartTotals(cart);
+}
+
+// Helper function to remove coupon
+function removeCouponFromCart(cart) {
+  cart.couponCode = null;
+  cart.couponDiscount = 0;
+  return calculateCartTotals(cart);
+}
+
+// Helper function to update address
+function updateCartAddress(cart, address, lat, lng) {
+  if (address) cart.address = address;
+  cart.location.lat = lat;
+  cart.location.lng = lng;
+  return calculateCartTotals(cart);
+}
+
 /**
  * @desc    Add product to cart
  * @route   POST /api/cart/add
@@ -58,8 +243,8 @@ const addToCart = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Add item to cart
-  cart.addItem({
+  // Add item to cart using helper function
+  addItemToCart(cart, {
     productId: product._id,
     name: product.name,
     price: product.price,
@@ -147,7 +332,7 @@ const updateCartItem = asyncHandler(async (req, res, next) => {
 
   // If quantity is 0, remove item
   if (qty === 0) {
-    cart.removeItem(productId);
+    removeItemFromCart(cart, productId);
   } else {
     // Check stock availability
     const product = await Product.findById(productId);
@@ -157,8 +342,8 @@ const updateCartItem = asyncHandler(async (req, res, next) => {
       );
     }
 
-    // Update quantity
-    cart.updateItem(productId, qty);
+    // Update quantity using helper function
+    updateCartItemQuantity(cart, productId, qty);
   }
 
   // Save cart
@@ -195,8 +380,8 @@ const removeFromCart = asyncHandler(async (req, res, next) => {
   // Find cart for this user
   const cart = await Cart.findOrCreateCart(userId);
 
-  // Remove item from cart
-  const removed = cart.removeItem(productId);
+  // Remove item from cart using helper function
+  const removed = removeItemFromCart(cart, productId);
 
   if (!removed) {
     return next(new ApiError("Item not found in cart", 404));
@@ -235,8 +420,8 @@ const clearCart = asyncHandler(async (req, res, next) => {
   // Find cart for this user
   const cart = await Cart.findOrCreateCart(userId);
 
-  // Clear cart
-  cart.clearCart();
+  // Clear cart using helper function
+  clearCartItems(cart);
   await cart.save();
 
   res.status(200).json({
@@ -297,8 +482,8 @@ const addTips = asyncHandler(async (req, res, next) => {
   // Find cart for this user
   const cart = await Cart.findOrCreateCart(userId);
 
-  // Add tips and calculate final total
-  cart.addTips(tipsAmount);
+  // Add tips using helper function
+  addTipsToCart(cart, tipsAmount);
   await cart.save();
 
   res.status(200).json({
@@ -356,8 +541,8 @@ const applyPoints = asyncHandler(async (req, res, next) => {
     return next(new ApiError("You cannot apply points to an empty cart", 400));
   }
 
-  // Apply points for discount
-  cart.applyPoints(pointsToUse);
+  // Apply points using helper function
+  applyPointsToCart(cart, pointsToUse);
   await cart.save();
 
   // Update user points (deduct used points)
@@ -394,8 +579,8 @@ const updateAddress = asyncHandler(async (req, res, next) => {
   // Find or create cart
   const cart = await Cart.findOrCreateCart(userId);
 
-  // Update address and location, automatically recalculates totals & shippingFee
-  cart.updateAddress(address, lat, lng);
+  // Update address and location using helper function
+  updateCartAddress(cart, address, lat, lng);
 
   // Save cart
   await cart.save();
@@ -441,7 +626,7 @@ const removePointsDiscount = asyncHandler(async (req, res, next) => {
   // Remove points discount from cart
   cart.pointsUsed = 0;
   cart.discount = 0;
-  cart.calculateTotals();
+  calculateCartTotals(cart);
   await cart.save();
 
   res.status(200).json({
@@ -513,8 +698,8 @@ const applyCoupon = asyncHandler(async (req, res, next) => {
   }
 
   try {
-    // Apply coupon
-    cart.applyCoupon(coupon.code, coupon.discount);
+    // Apply coupon using helper function
+    applyCouponToCart(cart, coupon.code, coupon.discount);
     await cart.save();
 
     res.status(200).json({
@@ -558,8 +743,8 @@ const removeCoupon = asyncHandler(async (req, res, next) => {
     return next(new ApiError("No coupon applied", 400));
   }
 
-  // Remove coupon
-  cart.removeCoupon();
+  // Remove coupon using helper function
+  removeCouponFromCart(cart);
   await cart.save();
 
   res.status(200).json({
